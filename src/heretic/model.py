@@ -16,6 +16,7 @@ from torch import FloatTensor, LongTensor, Tensor
 from torch.nn import Module, ModuleList
 from torch.optim import LBFGS
 from torch.utils.hooks import RemovableHandle
+from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
     AutoModelForImageTextToText,
@@ -581,9 +582,13 @@ class Model:
         bad_module_io: ModuleIO,
         parameters: ARAParameters,
     ):
-        for layer_index in range(
-            parameters.start_layer_index,
-            parameters.end_layer_index,
+        for layer_index in tqdm(
+            range(
+                parameters.start_layer_index,
+                parameters.end_layer_index,
+            ),
+            desc="Abliterating layers",
+            leave=False,
         ):
             for component, modules in self.get_layer_modules(layer_index).items():
                 for module_index, module in enumerate(modules):
@@ -687,9 +692,13 @@ class Model:
         bad_module_io: ModuleIO,
         parameters: ARAParameters,
     ):
-        for layer_index in range(
-            parameters.start_layer_index,
-            parameters.end_layer_index,
+        for layer_index in tqdm(
+            range(
+                parameters.start_layer_index,
+                parameters.end_layer_index,
+            ),
+            desc="Abliterating layers (LoRA)",
+            leave=False,
         ):
             for component, modules in self.get_layer_modules(layer_index).items():
                 for module_index, module in enumerate(modules):
@@ -869,7 +878,11 @@ class Model:
     ) -> list[str]:
         responses = []
 
-        for batch in batchify(prompts, self.settings.batch_size):
+        for batch in tqdm(
+            batchify(prompts, self.settings.batch_size),
+            desc="Generating responses",
+            leave=False,
+        ):
             for response in self.get_responses(
                 batch,
                 skip_special_tokens=skip_special_tokens,
@@ -926,7 +939,11 @@ class Model:
     def get_residuals_batched(self, prompts: list[Prompt]) -> Tensor:
         residuals = []
 
-        for batch in batchify(prompts, self.settings.batch_size):
+        for batch in tqdm(
+            batchify(prompts, self.settings.batch_size),
+            desc="Computing residuals",
+            leave=False,
+        ):
             residuals.append(self.get_residuals(batch))
 
         return torch.cat(residuals, dim=0)
@@ -1010,7 +1027,11 @@ class Model:
         # generic, this logic is required.
         module_io_batches: list[ModuleIO] = [
             self.get_module_io(batch)
-            for batch in batchify(prompts, self.settings.batch_size)
+            for batch in tqdm(
+                batchify(prompts, self.settings.batch_size),
+                desc="Capturing module I/O",
+                leave=False,
+            )
         ]
 
         module_io: ModuleIO = []
@@ -1083,7 +1104,11 @@ class Model:
     def get_logprobs_batched(self, prompts: list[Prompt]) -> Tensor:
         logprobs = []
 
-        for batch in batchify(prompts, self.settings.batch_size):
+        for batch in tqdm(
+            batchify(prompts, self.settings.batch_size),
+            desc="Computing logprobs",
+            leave=False,
+        ):
             logprobs.append(self.get_logprobs(batch))
 
         return torch.cat(logprobs, dim=0)
