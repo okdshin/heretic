@@ -1121,7 +1121,7 @@ class Model:
         _, outputs = self.generate(
             prompts,
             max_new_tokens=1,
-            output_scores=True,
+            output_logits=True,
             return_dict_in_generate=True,
         )
 
@@ -1129,9 +1129,10 @@ class Model:
         # of model.generate with return_dict_in_generate=True.
         outputs = cast(GenerateDecoderOnlyOutput, outputs)
 
-        # Logits for the first (only) generated token.
-        # This cast is valid because we passed output_scores=True above.
-        logits = cast(tuple[FloatTensor], outputs.scores)[0]
+        # Use raw logits, not processed generation scores; processors can insert
+        # -inf for suppressed tokens (e.g. Gemma 4's multimodal special tokens),
+        # which can make KL divergence evaluate to NaN.
+        logits = cast(tuple[FloatTensor], outputs.logits)[0]
 
         # The returned tensor has shape (prompt, token).
         return F.log_softmax(logits, dim=-1)
