@@ -230,6 +230,19 @@ class Settings(BaseSettings):
         ),
     )
 
+    response_prefix: str | None = Field(
+        default=None,
+        description=(
+            "If set, use this exact string as the response prefix instead of "
+            "auto-detecting it from sampled responses. Skips the detection step "
+            "entirely. Useful for models where auto-detection is unreliable "
+            "(e.g. a thinking-enabled model that only opens its CoT tag on some "
+            "prompts, which can make the common-prefix heuristic collapse to "
+            'empty) -- read the tag directly from the model\'s chat template '
+            "(e.g. `<|channel>thought\\n<channel|>` for Gemma 4) and pass it here."
+        ),
+    )
+
     use_piqa: bool = Field(
         default=False,
         description=(
