@@ -797,6 +797,24 @@ class Model:
                     # parameters during optimization (see ara_abliterate for details).
                     optimizer.zero_grad(set_to_none=True)
 
+                    # The objective above measures loss against the row-normalized
+                    # W_eff, but nothing forces the converged (lora_A, lora_B) to
+                    # actually reproduce that normalized matrix: PEFT's forward pass
+                    # uses the raw W_base + B @ A, with no normalization applied at
+                    # inference time. Unlike ara_abliterate, which snaps the matrix
+                    # back onto the normalized target after optimization, ara_lora
+                    # left this as a soft, gradient-only nudge. We close that gap
+                    # here: re-fit B by least squares against the fixed, converged A
+                    # so that the deployed weight matches the normalized target as
+                    # closely as the LoRA's rank budget allows.
+                    if self.settings.row_normalization == RowNormalization.FULL:
+                        with torch.no_grad():
+                            W_eff = W_base + (lora_B.float() @ lora_A.float())
+                            W_target = F.normalize(W_eff, p=2, dim=1) * W_row_norms
+                            delta_target = W_target - W_base
+                            A_pinv = LA.pinv(lora_A.float())
+                            lora_B.copy_((delta_target @ A_pinv).to(lora_B.dtype))
+
     def generate(
         self,
         prompts: list[Prompt],
