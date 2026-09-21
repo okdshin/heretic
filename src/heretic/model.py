@@ -846,12 +846,22 @@ class Model:
 
         # This cast is valid because list[str] is the return type
         # for batched operation with tokenize=False.
+        # enable_thinking is only passed when requested: templates that don't
+        # recognize it ignore unused kwargs, but omitting it entirely when
+        # use_thinking is False keeps behavior identical to before this flag
+        # existed, rather than relying on every template treating an explicit
+        # enable_thinking=False the same as the kwarg being absent.
+        template_kwargs: dict[str, Any] = {}
+        if self.settings.use_thinking:
+            template_kwargs["enable_thinking"] = True
+
         chat_prompts = cast(
             list[str],
             self.tokenizer.apply_chat_template(
                 chats,
                 add_generation_prompt=True,
                 tokenize=False,
+                **template_kwargs,
             ),
         )
 
@@ -1141,12 +1151,17 @@ class Model:
     def stream_chat_response(self, chat: list[dict[str, str]]) -> str:
         # This cast is valid because str is the return type
         # for single-chat operation with tokenize=False.
+        template_kwargs: dict[str, Any] = {}
+        if self.settings.use_thinking:
+            template_kwargs["enable_thinking"] = True
+
         chat_prompt = cast(
             str,
             self.tokenizer.apply_chat_template(
                 chat,
                 add_generation_prompt=True,
                 tokenize=False,
+                **template_kwargs,
             ),
         )
 

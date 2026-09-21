@@ -216,6 +216,20 @@ class Settings(BaseSettings):
         description="If LoRA is used in ARA, this sets up its rank. Keep it high enough to simulate the 'arbitrary' effect.",
     )
 
+    use_thinking: bool = Field(
+        default=False,
+        description=(
+            "Whether to enable thinking/reasoning mode (via the chat template's "
+            "`enable_thinking` flag) when generating calibration responses. "
+            "For hybrid reasoning models, this matches calibration to the token "
+            "context of a thinking-enabled deployment instead of the default "
+            "no-thinking context. The CoT itself is still force-closed immediately "
+            "via the detected response prefix, exactly as for models without this flag; "
+            "only the presence of the thinking-enabled marker (e.g. <|think|>) in the "
+            "prompt changes. Templates that don't support this flag ignore it."
+        ),
+    )
+
     use_piqa: bool = Field(
         default=False,
         description=(

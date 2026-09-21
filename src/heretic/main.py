@@ -429,6 +429,11 @@ def run():
         elif model.response_prefix.startswith("<|channel|>analysis<|message|>"):
             # gpt-oss.
             model.response_prefix = "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
+        elif model.response_prefix.startswith("<|channel>thought\n"):
+            # Gemma 4 family, with use_thinking enabled (the chat template
+            # otherwise closes this channel itself before generation starts,
+            # so it never appears here with use_thinking disabled).
+            model.response_prefix = "<|channel>thought\n<channel|>"
         elif model.response_prefix.startswith("<thought>"):
             # Unknown, suggested by user.
             model.response_prefix = "<thought></thought>"
