@@ -618,6 +618,14 @@ class Model:
                     weight_A.data = lora_A.to(weight_A.dtype)
                     weight_B.data = lora_B.to(weight_B.dtype)
 
+    def get_chat_template_kwargs(self) -> dict[str, Any]:
+        # enable_thinking is only passed when requested, rather than always passing
+        # an explicit value, so that behavior for templates that interpret its
+        # absence differently from False remains unchanged.
+        if self.settings.use_thinking:
+            return {"enable_thinking": True}
+        return {}
+
     def generate(
         self,
         prompts: list[Prompt],
@@ -639,6 +647,7 @@ class Model:
                 chats,
                 add_generation_prompt=True,
                 tokenize=False,
+                **self.get_chat_template_kwargs(),
             ),
         )
 
@@ -830,6 +839,7 @@ class Model:
                 chat,
                 add_generation_prompt=True,
                 tokenize=False,
+                **self.get_chat_template_kwargs(),
             ),
         )
 

@@ -264,6 +264,16 @@ class Settings(BaseSettings):
         description="Maximum number of tokens to generate for each response.",
     )
 
+    use_thinking: bool = Field(
+        default=False,
+        description=(
+            "Whether to pass enable_thinking=True to the chat template, for hybrid reasoning models "
+            "that are deployed with thinking enabled. The Chain-of-Thought block is still skipped "
+            "via the response prefix, but evaluation then happens in the token context "
+            "of a thinking-enabled conversation. Chat templates that don't support this flag ignore it."
+        ),
+    )
+
     response_prefix: str | None = Field(
         default=None,
         description=(
@@ -284,6 +294,11 @@ class Settings(BaseSettings):
             (
                 "<|channel|>analysis<|message|>",
                 "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>",
+            ),
+            # Gemma 4 (only generated with use_thinking enabled).
+            (
+                "<|channel>thought\n",
+                "<|channel>thought\n<channel|>",
             ),
             # Unknown, suggested by user.
             (

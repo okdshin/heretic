@@ -493,6 +493,7 @@ def run():
                 [{"role": "user", "content": "This is a dummy prompt."}],
                 add_generation_prompt=True,
                 tokenize=False,
+                **model.get_chat_template_kwargs(),
             ),
         )
 

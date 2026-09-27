@@ -42,6 +42,12 @@ max_batch_size = 128
 # Maximum number of tokens to generate for each response.
 max_response_length = 100
 
+# Whether to pass enable_thinking=True to the chat template, for hybrid reasoning models
+# that are deployed with thinking enabled. The Chain-of-Thought block is still skipped
+# via the response prefix, but evaluation then happens in the token context
+# of a thinking-enabled conversation. Chat templates that don't support this flag ignore it.
+use_thinking = false
+
 # List of pairs of the form [cot_initializer, closed_cot_block] used to skip
 # the Chain-of-Thought block in responses, so that evaluation happens
 # at the start of the actual response.
@@ -55,6 +61,11 @@ chain_of_thought_skips = [
     [
         "<|channel|>analysis<|message|>",
         "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>",
+    ],
+    # Gemma 4 (only generated with use_thinking enabled).
+    [
+        "<|channel>thought\n",
+        "<|channel>thought\n<channel|>",
     ],
     # Unknown, suggested by user.
     [
