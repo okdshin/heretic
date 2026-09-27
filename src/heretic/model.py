@@ -323,6 +323,13 @@ class Model:
             for name, module in self.model.named_modules():
                 if "lora_B" in name and hasattr(module, "weight"):
                     torch.nn.init.zeros_(module.weight)
+            # get_responses/stream_chat_response (used for refusal counting) don't
+            # pass use_cache=False like get_residuals/get_logprobs do, so each
+            # trial's evaluation leaves KV-cache blocks in the CUDA caching
+            # allocator's pool. Across many trials on the fast (no-reload) path
+            # this fragments/accumulates instead of being returned, eventually
+            # causing OOM on VRAM-constrained setups (see issue #365).
+            empty_cache()
             return
 
         dtype = self.model.dtype
