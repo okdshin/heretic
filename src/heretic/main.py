@@ -76,6 +76,14 @@ def obtain_merge_strategy(settings: Settings) -> str | None:
     Returns "merge", "adapter", or None (if cancelled/invalid).
     """
 
+    # LoRA (and therefore a mergeable/savable-standalone adapter) is used for
+    # traditional (non-ARA) abliteration and for ARA-LoRA, but not for
+    # full-rank ARA, which writes optimized weights directly into model.model.
+    # This must match _apply_lora()'s own gating condition in model.py.
+    uses_lora = not settings.use_ara or settings.use_ara_lora
+    if not uses_lora:
+        return "merge"
+
     if settings.quantization == QuantizationMethod.BNB_4BIT:
         print()
         print(
@@ -116,31 +124,33 @@ def obtain_merge_strategy(settings: Settings) -> str | None:
             )
         print()
 
-        strategy = prompt_select(
-            "How do you want to proceed?",
-            choices=[
-                Choice(
-                    title="Merge LoRA into full model"
-                    + (
-                        ""
-                        if settings.quantization == QuantizationMethod.NONE
-                        else " (requires sufficient RAM)"
-                    ),
-                    value="merge",
+    strategy = prompt_select(
+        "How do you want to proceed?",
+        choices=[
+            Choice(
+                title="Merge LoRA into full model"
+                + (
+                    ""
+                    if settings.quantization == QuantizationMethod.NONE
+                    else " (requires sufficient RAM)"
                 ),
-                Choice(
-                    title="Cancel",
-                    value="cancel",
-                ),
-            ],
-        )
+                value="merge",
+            ),
+            Choice(
+                title="Save LoRA adapter only (smaller, no merge needed)",
+                value="adapter",
+            ),
+            Choice(
+                title="Cancel",
+                value="cancel",
+            ),
+        ],
+    )
 
-        if strategy == "cancel":
-            return None
+    if strategy == "cancel":
+        return None
 
-        return strategy
-    else:
-        return "merge"
+    return strategy
 
 
 def run():
@@ -884,7 +894,9 @@ def run():
                                 print("Saving LoRA adapter...")
                                 model.model.save_pretrained(save_directory)
                             else:
-                                if settings.use_ara:
+                                if settings.use_ara and not settings.use_ara_lora:
+                                    # Full-rank ARA writes optimized weights directly into
+                                    # model.model, so there's no LoRA adapter to merge.
                                     print("Saving model...")
                                     merged_model = model.model
                                 else:
@@ -943,7 +955,9 @@ def run():
                                     token=token,
                                 )
                             else:
-                                if settings.use_ara:
+                                if settings.use_ara and not settings.use_ara_lora:
+                                    # Full-rank ARA writes optimized weights directly into
+                                    # model.model, so there's no LoRA adapter to merge.
                                     print("Uploading model...")
                                     merged_model = model.model
                                 else:
